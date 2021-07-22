@@ -11,7 +11,7 @@ import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+@Transactional
 public class UserServiceImpl implements IUserService {
     private final UserRepository userRepository;
     private final ModelMapper mapper;
@@ -22,38 +22,31 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public List<User> getAllUser(){
-        List<User> listUser = userRepository.findAll();
-        return listUser;
+    public List<User> findAllUser(){
+        return userRepository.findAll();
     }
 
     @Override
-    public void addUser(UserDTO userDTO){
-        User addUser = mapper.map(userDTO,User.class);
-        userRepository.save(addUser);
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    @Override
+    public void addUser(User user){
+        UserDTO UserDTO = mapper.map(user,UserDTO.class);
+        userRepository.save(user);
     }
 
     @Override
     public void deleteUser(Long id){
-        if(!userRepository.existsById(id)){
-            userRepository.deleteById(id);
-        }
-        else {
-            throw new IllegalStateException("No id founded");
-        }
+        userRepository.deleteById(id);
     }
 
-    @Override
-    public void getUserById(Long id){
-        Optional<User> user = Optional.ofNullable(userRepository.findById(id).orElseThrow(() -> new IllegalStateException("User with id " + id + " is not exist")));
-    }
-
-    @Transactional
     @Override
     public void updateUser(Long id, UserDTO userDTO){
-        User user = userRepository.findById(id).orElseThrow(() -> new IllegalStateException("User with id "+ id + " is not exist"));
-        User newUser = mapper.map(userDTO, User.class);
-        userDTO.setId(user.getId());
-        userRepository.save(newUser);
+        User user = userRepository.getById(id);
+        User updateUser = mapper.map(userDTO,User.class);
+        updateUser.setId(user.getId());
+        userRepository.save(updateUser);
     }
 }
