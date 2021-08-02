@@ -1,46 +1,51 @@
 package com.example.training.controller;
 
-import com.example.training.dto.UserDTO;
 import com.example.training.entity.User;
-import com.example.training.service.interfaces.IUserService;
+import com.example.training.service.implementation.IUserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("users")
+@RequestMapping("/api/users")
 public class UserController {
 
-    private final IUserService userService;
     @Autowired
-    public UserController(IUserService userService) {
-        this.userService = userService;
-    }
+    private IUserServiceImpl userService;
 
     @GetMapping("")
-    public List<User> getAllUser(){
-        return userService.findAllUser();
+    public ResponseEntity<Iterable<User>> getAllUser(){
+        return new ResponseEntity<>(userService.findAll(),HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public Optional<User> getUserById(@PathVariable("id") Long id){
-        return userService.findById(id);
+    public ResponseEntity<User> getUserById(@PathVariable("id") Long id){
+        Optional<User> userOptional = userService.findById(id);
+        return userOptional.map(user -> new ResponseEntity<>(user, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping("")
-    public void addUser(@RequestBody User user){
-        userService.addUser(user);
+    public ResponseEntity<User> createNewUser(@RequestBody User user){
+        return new ResponseEntity<>(userService.save(user),HttpStatus.OK);
     }
 
-    @DeleteMapping(path = "/{id}")
-    public void deleteUser(@PathVariable("id") Long id){
-        userService.deleteUser(id);
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id,@RequestBody User user){
+        Optional<User> userOptional = userService.findById(id);
+        return userOptional.map(userupdate -> {user.setId(userupdate.getId());
+            return new ResponseEntity<>(userService.save(user),HttpStatus.OK);})
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping(path = "/{id}")
-    public void updateUser(@PathVariable("id") Long id, @RequestBody UserDTO userDTO){
-        userService.updateUser(id,userDTO);
+    @DeleteMapping( "/{id}")
+    public ResponseEntity<User> deleteUser(@PathVariable("id") Long id){
+        Optional<User> userOptional = userService.findById(id);
+        return userOptional.map(user -> {
+            userService.delete(id);
+            return new ResponseEntity<>(user,HttpStatus.OK);
+        }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 }
